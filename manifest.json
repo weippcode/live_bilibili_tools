@@ -1,0 +1,43 @@
+{
+    "manifest_version": 3,
+    "name": "B站直播助手",
+    "version": "1.7.5",
+    "description": "bilibili直播间插件",
+    "author": "魏皮皮",
+    "icons": {
+        "128": "img/logo.png",
+        "48": "img/logo.png",
+        "16": "img/logo.png"
+    },
+    "action": {
+        "default_icon": "img/logo.png",
+        "default_popup": "popup.html"
+    },
+    "permissions": [
+        "storage",
+        "notifications",
+        "tabs"
+    ],
+    "content_scripts": [
+        {
+            "matches": ["https://live.bilibili.com/*"],
+            "css": ["css/content.css"],
+            "js": [
+                "js/tools.js",
+                "js/jquery.min.js",
+                "js/content.js"
+            ],
+            "run_at": "document_end"
+        }
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "css/content.css"
+            ],
+            "matches": [
+                "https://live.bilibili.com/*"
+            ]
+        }
+    ]
+}
