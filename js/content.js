@@ -4,15 +4,15 @@
  * @Author: 魏皮皮
  * @Date: 2023-03-09 22:44:39
  * @LastEditors: 魏皮皮
- * @LastEditTime: 2023-03-21 09:40:38
+ * @LastEditTime: 2023-03-24 12:18:48
  */
 
 // 控制显示
-let domKey = {
-    cw: ".haruna-sekai-de-ichiban-kawaii",
-    sc: "#dys-sc"
-};
 function setShow(bodyDom, type, value) {
+    const domKey = {
+        cw: ".haruna-sekai-de-ichiban-kawaii",
+        sc: "#dys-sc"
+    };
     let dom = bodyDom.find(domKey[type]);
     switch(type) {
         case "cw":
@@ -25,13 +25,7 @@ function setShow(bodyDom, type, value) {
 }
 
 // 获取时间
-function getTime(
-    { 
-        timeType, 
-        time
-    },
-    cell
-) {
+function getTime({ timeType, time }, cell) {
     time = parseInt(time);
     if (isNaN(time)) {
         time = 10;
@@ -46,68 +40,8 @@ function getTime(
     return wtime;
 }
 
-// 复读弹幕
-function pushRereadingDom(bodyDom) {
-    let rereadingDom = $(`<li class="_context-menu-item_19b1c"><span class="_context-menu-text_19b1c">复读弹幕</span></li>`);
-    let contextMenuDom = bodyDom.find("._web-player-context-menu_19b1c");
-    contextMenuDom.append(rereadingDom);
-    rereadingDom.on("click", () => {
-        let value = contextMenuDom.find("li").eq(0).children("span").text();
-        if (value !== "观看卡顿？切换备线试试") {
-            let input = bodyDom.find(".chat-input");
-            input.val(value).trigger("input");
-            bodyDom.find(".bottom-actions").find("button").eq(0).click();
-        }
-        contextMenuDom.css("opacity", 0);
-    });
-}
-
-// 初始化
-async function init(bodyDom) {
-    let documentDom = $(document);
-    let livePlayerDom = bodyDom.find("#live-player");
-    livePlayerDom.prepend(`<div id="dys-sc"></div>`);
-    let dysScDom = bodyDom.find("#dys-sc");
-    // pushRereadingDom(bodyDom);
-    window.setTimeout(
-        () => {
-            console.log(123);
-            livePlayerDom.trigger("mousemove");
-        },
-        10000
-    );
-    await initStorage();
-    await localGet(["cw", "sc", "top", "left"]).then(result => {
-        setShow(bodyDom, "cw", result.cw);
-        setShow(bodyDom, "sc", result.sc);
-        dysScDom.css("top", `${result.top}px`);
-        dysScDom.css("left", `${result.left}px`);
-    });
-    dysScDom.on("mousedown", e => {
-        let top = 0;
-        let left = 0;
-        function moveFun(e) {
-            top = e.clientY;
-            left = e.clientX;
-            let leftBoundary = bodyDom.outerWidth() - 310;
-            if (left > leftBoundary) {
-                left = leftBoundary;
-            }
-            dysScDom.css("top", `${top}px`);
-            dysScDom.css("left", `${left}px`);
-        }
-        documentDom.on("mousemove", moveFun);
-        documentDom.on("mouseup", async () => {
-            documentDom.off("mousemove", moveFun);
-            await localSet({
-                top: top,
-                left: left
-            });
-        });
-    });
-    chrome.runtime.onMessage.addListener(({ type, value }) => {
-        setShow(bodyDom, type, value);
-    });
+// 添加SC列表
+function addSc(bodyDom, dysScDom) {
     bodyDom.find("#chat-history-list")[0].addEventListener("DOMNodeInserted", value => {
         $(value.relatedNode).children().toArray().forEach(async item => {
             item = $(item);
@@ -154,6 +88,98 @@ async function init(bodyDom) {
             }
         });
     });
+}
+
+// SC列表移动
+function scMove(dysScDom, documentDom) {
+    dysScDom.on("mousedown", e => {
+        let top = 0;
+        let left = 0;
+        function moveFun(e) {
+            top = e.clientY;
+            left = e.clientX;
+            let leftBoundary = bodyDom.outerWidth() - 310;
+            if (left > leftBoundary) {
+                left = leftBoundary;
+            }
+            dysScDom.css("top", `${top}px`);
+            dysScDom.css("left", `${left}px`);
+        }
+        documentDom.on("mousemove", moveFun);
+        documentDom.on("mouseup", async () => {
+            documentDom.off("mousemove", moveFun);
+            await localSet({
+                top: top,
+                left: left
+            });
+        });
+    });
+}
+
+// 复读弹幕
+function pushRereadingDom(bodyDom) {
+    console.log("----------复读模块加载----------");
+    let rereadingDom = $(`<li class="_context-menu-item_19b1c"><span class="_context-menu-text_19b1c">复读弹幕</span></li>`);
+    let contextMenuDom = bodyDom.find("._web-player-context-menu_19b1c");
+    contextMenuDom.append(rereadingDom);
+    rereadingDom.on("click", () => {
+        let value = contextMenuDom.find("li").eq(0).children("span").text();
+        if (value !== "观看卡顿？切换备线试试") {
+            let textarea = bodyDom.find("textarea.chat-input");
+            textarea.val(value);
+            textarea[0].dispatchEvent(new InputEvent("input", {
+                bubbles: true,
+                cancelable: true
+            }));
+            bodyDom.find(".bottom-actions").find("button").eq(0).click();
+        }
+        contextMenuDom.css("opacity", 0);
+    });
+}
+
+// 设置最高画质
+function setHighest(livePlayerDom) {
+    console.log("----------最高画质模块加载----------");
+    livePlayerDom[0].dispatchEvent(new MouseEvent("mousemove", {
+        bubbles: true,
+        cancelable: true
+    }));
+    let tnode = null;
+    livePlayerDom.find(".quality-wrap")[0].addEventListener("DOMNodeInserted", value => {
+        const node = $(value.relatedNode).find(".quality-it").eq(0);
+        if (node[0]) {
+            tnode = node;
+        }
+    });
+    livePlayerDom.find(".quality-wrap")[0].dispatchEvent(new MouseEvent("mouseenter", {
+        bubbles: true,
+        cancelable: true
+    }));
+    window.setTimeout(() => {
+        tnode.click();
+    }, 100);
+}
+
+// 初始化
+async function init(bodyDom) {
+    await initStorage();
+    let documentDom = $(document);
+    let livePlayerDom = bodyDom.find("#live-player");
+    livePlayerDom.prepend(`<div id="dys-sc"></div>`);
+    let dysScDom = bodyDom.find("#dys-sc");
+    await localGet(["cw", "sc", "top", "left"]).then(result => {
+        setShow(bodyDom, "cw", result.cw);
+        setShow(bodyDom, "sc", result.sc);
+        dysScDom.css("top", `${result.top}px`);
+        dysScDom.css("left", `${result.left}px`);
+    });
+    chrome.runtime.onMessage.addListener(({ type, value }) => {
+        setShow(bodyDom, type, value);
+    });
+    pushRereadingDom(bodyDom);
+    setHighest(livePlayerDom);
+    scMove(dysScDom, documentDom);
+    addSc(bodyDom, dysScDom);
 }
 
 function loadInit() {
