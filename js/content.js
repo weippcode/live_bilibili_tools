@@ -4,7 +4,7 @@
  * @Author: 魏皮皮
  * @Date: 2023-03-09 22:44:39
  * @LastEditors: 魏皮皮
- * @LastEditTime: 2023-03-24 12:25:02
+ * @LastEditTime: 2023-03-24 17:07:40
  */
 
 // 控制显示
@@ -91,11 +91,13 @@ function addSc(bodyDom, dysScDom) {
 }
 
 // SC列表移动
-function scMove(dysScDom, documentDom) {
+function scMove(bodyDom, dysScDom) {
     dysScDom.on("mousedown", e => {
+        console.log("点击移动");
         let top = 0;
         let left = 0;
         function moveFun(e) {
+            console.log("进行移动");
             top = e.clientY;
             left = e.clientX;
             let leftBoundary = bodyDom.outerWidth() - 310;
@@ -105,9 +107,10 @@ function scMove(dysScDom, documentDom) {
             dysScDom.css("top", `${top}px`);
             dysScDom.css("left", `${left}px`);
         }
-        documentDom.on("mousemove", moveFun);
-        documentDom.on("mouseup", async () => {
-            documentDom.off("mousemove", moveFun);
+        bodyDom.on("mousemove", moveFun);
+        bodyDom.on("mouseup", async () => {
+            console.log("结束移动");
+            bodyDom.off("mousemove", moveFun);
             await localSet({
                 top: top,
                 left: left
@@ -157,16 +160,15 @@ function setHighest(livePlayerDom) {
     }));
     window.setTimeout(() => {
         tnode.click();
-    }, 100);
+    }, 500);
 }
 
 // 初始化
 async function init(bodyDom) {
-    await initStorage();
-    let documentDom = $(document);
     let livePlayerDom = bodyDom.find("#live-player");
     livePlayerDom.prepend(`<div id="dys-sc"></div>`);
     let dysScDom = bodyDom.find("#dys-sc");
+    await initStorage();
     await localGet(["cw", "sc", "top", "left"]).then(result => {
         setShow(bodyDom, "cw", result.cw);
         setShow(bodyDom, "sc", result.sc);
@@ -178,7 +180,7 @@ async function init(bodyDom) {
     });
     pushRereadingDom(bodyDom);
     setHighest(livePlayerDom);
-    scMove(dysScDom, documentDom);
+    scMove(bodyDom, dysScDom);
     addSc(bodyDom, dysScDom);
 }
 
@@ -196,7 +198,7 @@ function loadInit() {
     if (bodyDom.find("#chat-history-list").length) {
         init(bodyDom);
     } else {
-        console.log("----------初始化失败3秒后重新加载----------");
+        console.log("----------初始化失败，3秒后重新加载----------");
         window.setTimeout(
             () => {
                 loadInit();

@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "B站直播助手",
-    "version": "1.7.5",
+    "version": "1.7.6",
     "description": "bilibili直播间插件",
     "author": "魏皮皮",
     "icons": {
